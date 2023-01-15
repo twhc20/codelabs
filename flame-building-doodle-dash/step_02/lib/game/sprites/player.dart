@@ -6,10 +6,12 @@ import 'dart:async';
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
 import '../doodle_dash.dart';
 // Core gameplay: Import sprites.dart
+import 'sprites.dart';
 
 enum PlayerState {
   left,
@@ -41,13 +43,14 @@ class Player extends SpriteGroupComponent<PlayerState>
   Character character;
   double jumpSpeed;
   // Core gameplay: Add _gravity property
+  final double _gravity = 9;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
 
     // Core gameplay: Add circle hitbox to Dash
-
+    await add(CircleHitbox());
     // Add a Player to the game: loadCharacterSprites
     // Add a Player to the game: Default Dash onLoad to center state
     await _loadCharacterSprites();
@@ -73,7 +76,7 @@ class Player extends SpriteGroupComponent<PlayerState>
     }
 
     // Core gameplay: Add gravity
-
+    _velocity.y += _gravity;
     // Add a Player to the game: Calculate Dash's current position based on
     // her velocity over elapsed time since last update cycle
     position += _velocity * dt;
@@ -127,8 +130,25 @@ class Player extends SpriteGroupComponent<PlayerState>
   // Powerups: Add isWearingHat getter
 
   // Core gameplay: Override onCollision callback
+  @override
+  void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
+    super.onCollision(intersectionPoints, other);
+    bool isCollidingVertically =
+        (intersectionPoints.first.y - intersectionPoints.last.y).abs() < 5;
+
+    if (isMovingDown && isCollidingVertically) {
+      current = PlayerState.center;
+      if (other is NormalPlatform) {
+        jump();
+        return;
+      }
+    }
+  }
 
   // Core gameplay: Add a jump method
+  void jump({double? specialJumpSpeed}) {
+    _velocity.y = specialJumpSpeed != null ? -specialJumpSpeed : -jumpSpeed;
+  }
 
   void _removePowerupAfterTime(int ms) {
     Future.delayed(Duration(milliseconds: ms), () {
